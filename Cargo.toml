@@ -1,0 +1,11 @@
+[package]
+name = "ggez_test"
+version = "0.1.0"
+authors = ["thomas"]
+edition = "2018"
+
+[dependencies]
+mint = "0.5"
+ecs = "0.23.1"
+ggez = "0.5.0-rc.0"
+specs = "0.14.3"
