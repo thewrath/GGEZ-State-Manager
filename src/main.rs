@@ -10,6 +10,8 @@ use std::path;
 
 trait State {
     fn get_name(&self) -> &'static str;
+    //add default for this function 
+    fn change_state(&mut self) -> bool;
     fn update(&mut self, _ctx: &mut Context) -> GameResult; 
     fn draw(&mut self, ctx: &mut Context) -> GameResult; 
 }
@@ -19,6 +21,8 @@ struct MainState {
     name: &'static str,
     frames: usize,
     text: graphics::Text,
+    to_next_state: bool, 
+    count: u32
 }
 
 impl MainState {
@@ -28,7 +32,7 @@ impl MainState {
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf")?;
         let text = graphics::Text::new(("Hello world!", font, 48.0));
 
-        let s = MainState { name: "Main state", frames: 0, text };
+        let s = MainState { name: "Main state", frames: 0, text, to_next_state: false, count: 0};
         Ok(s)
     }
 }
@@ -36,6 +40,14 @@ impl MainState {
 impl State for MainState{
     fn get_name(&self) -> &'static str{
         self.name
+    }
+
+    fn change_state(&mut self) -> bool{
+        if self.to_next_state {
+            self.to_next_state = false;
+            return true;  
+        }
+        false 
     }
 
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
@@ -55,6 +67,13 @@ impl State for MainState{
         self.frames += 1;
         if (self.frames % 100) == 0 {
             println!("FPS: {}", ggez::timer::fps(ctx));
+            println!("FRAME NUMBER: {:?}", self.frames);
+            self.count += 1;
+        }
+
+        if self.count > 10{
+            self.to_next_state = true;
+            self.count = 0;
         }
 
         Ok(())
@@ -66,6 +85,7 @@ struct GameState {
     name: &'static str,
     frames: usize,
     text: graphics::Text,
+    to_next_state: bool
 }
 
 impl GameState {
@@ -75,7 +95,7 @@ impl GameState {
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf")?;
         let text = graphics::Text::new(("Game State!", font, 48.0));
 
-        let s = GameState { name: "Game state", frames: 0, text };
+        let s = GameState { name: "Game state", frames: 0, text, to_next_state: false };
         Ok(s)
     }
 }
@@ -83,6 +103,15 @@ impl GameState {
 impl State for GameState{
     fn get_name(&self) -> &'static str{
         self.name
+    }
+
+    fn change_state(&mut self) -> bool{
+        if self.to_next_state {
+            self.to_next_state = false;
+            return true;    
+        }
+        false
+        
     }
 
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
@@ -135,9 +164,17 @@ impl StateManager {
 impl event::EventHandler for StateManager {
     fn update(&mut self, _ctx: &mut Context) -> GameResult { 
         match &mut self.current_state {
-              Some(current_state) => {current_state.update(_ctx)?;},
+              Some(current_state) => {
+                current_state.update(_ctx)?;
+                println!("CURRENT STATE: {}", current_state.get_name());
+                //always at the end of the statement 
+                if current_state.change_state(){
+                    self.change_state();
+                }
+              },
               None => (),
         }  
+
         Ok(())
     }
 
@@ -197,3 +234,9 @@ mod tests {
         assert_eq!(2 + 2, 4);
     }
 }
+
+//TODO 
+/*
+    -Move FPS management in the stateManager and restrained at 60 FPS all state 
+    -Put the name and the fps display system in the stateManager 
+*/
